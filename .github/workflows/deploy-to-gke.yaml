@@ -1,0 +1,40 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main # Set this to the branch that should trigger the deployment
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Google Cloud
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          project_id: your-gcp-project-id # Replace with your GCP project ID
+          export_default_credentials: true
+
+      - name: Configure Docker
+        run: |-
+          gcloud auth configure-docker
+
+      - name: Build and Push Docker image
+        run: |-
+          # Replace with your image name and tag
+          docker build -t gcr.io/your-gcp-project-id/your-image-name:${{ github.sha }} .
+          docker push gcr.io/your-gcp-project-id/your-image-name:${{ github.sha }}
+
+      - name: Set up Kustomize
+        run: |-
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Deploy to GKE
+        run: |-
+          gcloud container clusters get-credentials your-cluster-name --zone your-cluster-zone
+          kubectl apply -f k8s/ # Replace with your Kubernetes manifest directory
