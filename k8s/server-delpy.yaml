@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-depl
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - name: server
+          image: turkialq/multi-server
+          env:
+            - name: REDIS_HOST
+              value: redis-srv
+            - name: REDIS_PORT
+              value: "6379"
+            - name: PGUSER
+              value: postgres
+            - name: PGHOST
+              value: postgres-srv
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  key: PGPASSWORD
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-srv
+spec:
+  selector:
+    app: server
+  ports:
+    - name: server
+      protocol: TCP
+      port: 5001
+      targetPort: 5001
